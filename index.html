@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scoreboard</title>
+    <style>
+        body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+}
+body.six {
+    background-image: url('https://i.ibb.co/Bs21Vbq/1.png') ;
+    background-size: cover;
+}
+body.four {
+    background-image: url('https://i.ibb.co/j4YV2xy/2.png')  ;
+    background-size: cover;
+
+}
+.wicket-taken {
+    background-image: url('https://i.ibb.co/8dwrfFC/3.png')  ;
+    background-size: cover;
+
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    width: 400px;
+    margin: auto;
+}
+
+
+.card {
+    background-image: url("https://i.ibb.co/xqrph2z/390fc716070ce65f3cc496d84b909812.jpg");
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    background-position: -28px;
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+#scoreboard {
+    display: flex;
+    flex-direction: column;
+}
+
+.score-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.score-info p {
+    margin-right: 10px;
+}
+
+#runs,
+#overs {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.balls-container {
+    display: flex;
+}
+
+.ball {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    color: white;
+    justify-content: center;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>CSK</h1>
+            <div id="scoreboard">
+                <div class="score-info">
+                    <p>Runs:</p>
+                    <span id="runs">0</span>
+                </div>
+                <div class="score-info">
+                    <p>Overs:</p>
+                    <span id="overs">0.0</span>
+                </div>
+                <div class="balls-container" id="ballsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const addOneRemoveRest = (addClass)=> {
+            const removeClass = ['out', 'six','four'].filter(className=>className!==addClass);
+            removeClass.forEach((item)=>  document.body.classList.remove(item))
+            if(addClass)  return document.body.classList.add(addClass);
+        }
+
+        // Update scoreboard with data received from the server
+        socket.on('updateScoreboard', ({ runs, overs, wickets }) => {
+            const runContainer = document.getElementById('runs');
+            const overContainer = document.getElementById('overs');
+
+            if(!runContainer || !overContainer) return
+            runContainer.innerText = `${runs}/${wickets}`;
+            overContainer.innerText = overs;
+        });
+
+        // Update balls container with runs scored
+        socket.on('updateBalls', ({ runsArray, isWicket }) => {
+            const ballsContainer = document.getElementById('ballsContainer');
+            if(!ballsContainer) return;
+            ballsContainer.innerHTML = ''; // Clear existing balls
+            runsArray.forEach((run) => {
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                const colors = {
+                    'W': 'red',
+                    '4': '#4CAF50',
+                    '6' : "#4CAF50",
+                }
+                const bg = colors[String(run)] ||  '#000';
+                if(isWicket) {
+                    addOneRemoveRest('out')
+                } else {
+                    if (+run === 4) {
+                        addOneRemoveRest('four');
+                    } else if (+run === 6) {
+                        addOneRemoveRest('six');
+                    } else {
+                        addOneRemoveRest('')
+                    }
+                }
+                ball.style.backgroundColor = bg;
+                ball.style.border = '1px solid black'
+                ball.innerText = run; // Display runs scored inside the ball
+                ballsContainer.appendChild(ball);
+            });
+        });
+
+        socket.on('matchFinished', ()=> {
+             const body = document.querySelector('body');
+             body.innerHTML = "ALL WICKET"
+        })
+
+         socket.on('wicketTaken', (wickets) => {
+            const body = document.querySelector('body');
+            body.classList.add('wicket-taken');
+
+            // Remove the class after animation
+            setTimeout(() => {
+                body.classList.remove('wicket-taken');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
